@@ -242,6 +242,12 @@
     </div>
 
     <div class="card">
+      <h2>月別 参加状況</h2>
+      <p class="sub">参加人数（重複除く）と、延べ登録件数（同じ人の複数回参加も含む活動量）の推移です。</p>
+      <div class="chart-wrap"><canvas id="monthlyChart"></canvas></div>
+    </div>
+
+    <div class="card">
       <h2>参加者一覧</h2>
       <p class="sub">最新の登録順に表示しています。</p>
       <div class="search-row">
@@ -259,6 +265,7 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycby5E33lcFLUykPSnaRvtljd
 
 let STATE = { departments: [], initiatives: [], records: [] };
 let chartInstance = null;
+let monthlyChartInstance = null;
 
 function leafSVG(filled){
   const fill = filled ? "#4A6741" : "#D8CFB4";
@@ -368,7 +375,54 @@ function renderDashboard(){
     }
   });
 
+  renderMonthly();
   renderTable();
+}
+
+function renderMonthly(){
+  const buckets = {}; // 'YYYY-MM' -> { people: Set, total: number }
+  STATE.records.forEach(r=>{
+    const d = new Date(r.timestamp);
+    if(isNaN(d)) return;
+    const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    if(!buckets[key]) buckets[key] = { people: new Set(), total: 0 };
+    buckets[key].people.add(r.name.replace(/[\s\u3000]+/g, ''));
+    buckets[key].total += 1;
+  });
+
+  const sortedKeys = Object.keys(buckets).sort();
+  const labels = sortedKeys.map(k=>{
+    const [y,m] = k.split('-');
+    return y+'年'+m+'月';
+  });
+  const peopleData = sortedKeys.map(k=>buckets[k].people.size);
+  const totalData = sortedKeys.map(k=>buckets[k].total);
+
+  const ctx = document.getElementById('monthlyChart').getContext('2d');
+  if(monthlyChartInstance) monthlyChartInstance.destroy();
+
+  if(!sortedKeys.length){
+    ctx.canvas.parentElement.innerHTML = '<div class="empty">まだ参加記録がありません</div>';
+    return;
+  }
+
+  monthlyChartInstance = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        { label:'参加人数（人）', data:peopleData, backgroundColor:'#4A6741', borderRadius:4 },
+        { label:'延べ登録件数（件）', data:totalData, backgroundColor:'#B8862E', borderRadius:4 }
+      ]
+    },
+    options:{
+      plugins:{ legend:{ display:true, position:'bottom', labels:{ font:{ family:"'Noto Sans JP', sans-serif", size:12 } } } },
+      scales:{
+        x:{ ticks:{ font:{ family:"'Noto Sans JP', sans-serif", size:12 } } },
+        y:{ beginAtZero:true, ticks:{ precision:0 } }
+      }
+    }
+  });
 }
 
 function renderTable(keyword=''){
