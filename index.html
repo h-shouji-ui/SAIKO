@@ -272,6 +272,15 @@ function leafSVG(filled){
   return `<svg viewBox="0 0 24 24"><path d="M12 2C7 2 3 6 3 12c0 4 3 8 9 10 6-2 9-6 9-10 0-6-4-10-9-10z" fill="${fill}"/></svg>`;
 }
 
+function escapeHtml(str){
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function renderTabs(){
   document.querySelectorAll('.tab-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -286,7 +295,7 @@ function renderTabs(){
 function renderForm(){
   const deptSelect = document.getElementById('deptSelect');
   deptSelect.innerHTML = '<option value="">選択してください</option>' +
-    STATE.departments.map(d=>`<option value="${d.name}">${d.name}</option>`).join('');
+    STATE.departments.map(d=>`<option value="${escapeHtml(d.name)}">${escapeHtml(d.name)}</option>`).join('');
 
   const checkGrid = document.getElementById('checkGrid');
   if(!STATE.initiatives.length){
@@ -294,8 +303,8 @@ function renderForm(){
   } else {
     checkGrid.innerHTML = STATE.initiatives.map((item,i)=>`
       <label class="check-item" id="item-${i}">
-        <input type="checkbox" value="${item}" onchange="toggleCheck(${i})">
-        <span>${item}</span>
+        <input type="checkbox" value="${escapeHtml(item)}" onchange="toggleCheck(${i})">
+        <span>${escapeHtml(item)}</span>
       </label>
     `).join('');
   }
@@ -336,7 +345,7 @@ function renderDashboard(){
       for(let i=0;i<leafTotal;i++) leaves += leafSVG(i<leafFilled);
       return `
         <div class="dept-card">
-          <div class="dept-name">${d.name}</div>
+          <div class="dept-name">${escapeHtml(d.name)}</div>
           <div class="dept-rate">${rate!==null ? rate+'%' : uniqueParticipants+'人'}</div>
           <div class="dept-count">${uniqueParticipants}人 参加${total ? ' / 従業員 '+total+'人' : '（従業員数未設定）'}</div>
           <div class="leaves">${leaves}</div>
@@ -442,9 +451,9 @@ function renderTable(keyword=''){
         ${rows.slice(0,200).map(r=>`
           <tr>
             <td>${new Date(r.timestamp).toLocaleString('ja-JP', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
-            <td>${r.department}</td>
-            <td>${r.name}</td>
-            <td>${r.initiative}</td>
+            <td>${escapeHtml(r.department)}</td>
+            <td>${escapeHtml(r.name)}</td>
+            <td>${escapeHtml(r.initiative)}</td>
           </tr>`).join('')}
       </tbody>
     </table>`;
